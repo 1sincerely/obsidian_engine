@@ -2,9 +2,16 @@ use winit::{window::Window};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use log;
+use pollster;
+use std::sync::Arc;
+
+use crate::mesh::{Mesh, Vertex};
+use crate::renderer::Renderer;
 
 pub struct App {
-    pub window: Option<Window>,
+    pub window: Option<Arc<Window>>,
+    pub renderer: Option<Renderer>,
+    pub mesh: Option<Mesh>,
 }
 
 impl ApplicationHandler for App {
@@ -13,8 +20,20 @@ impl ApplicationHandler for App {
             let window_attrs = Window::default_attributes()
                 .with_title("Obsidian Engine");
 
-            let window = event_loop.create_window(window_attrs).unwrap();
-            self.window = Some(window);
+            let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
+            self.window = Some(window.clone());
+            let renderer = pollster::block_on(Renderer::new(window)).unwrap();
+            let vertices = [ 
+                Vertex {position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0]},
+                Vertex {position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0]},
+                Vertex {position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0]},
+                Vertex {position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0]},
+                Vertex {position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0]},
+                Vertex {position: [0.7, -0.12, 0.0], color: [0.4, 0.2, 0.4]},
+                ];
+            let mesh = Mesh::new(&renderer.device, &vertices);
+            self.renderer = Some(renderer);
+            self.mesh = Some(mesh);
         }
     }
     fn window_event(
@@ -30,7 +49,10 @@ impl ApplicationHandler for App {
             },
 
             WindowEvent::RedrawRequested => {
-                self.window.as_ref().unwrap().request_redraw();
+                let renderer = self.renderer.as_mut().unwrap();
+                let mesh = self.mesh.as_ref().unwrap();
+                pollster::block_on(renderer.render(mesh)).unwrap();
+
             },
             WindowEvent::Resized(size) => {
                 log::info!("resized: {:?}", size)
