@@ -2,6 +2,7 @@ mod window;
 mod app;
 mod renderer;
 mod mesh;
+mod material;
 
 use app::App;
 use winit::event_loop::EventLoop;
