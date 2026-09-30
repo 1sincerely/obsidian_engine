@@ -138,4 +138,6 @@ pub fn create_wireframe_material(device: &wgpu::Device, format: wgpu::TextureFor
         });
 
         Material { pipeline: pipeline }
+
+        //todo: fn create_material(topology) -> material
 }
